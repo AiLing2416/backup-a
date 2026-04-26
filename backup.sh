@@ -44,7 +44,7 @@ if ! echo "ping" | rclone rcat "remote:${BUCKET}/.backup_ping.txt"; then
     echo "ERROR: Pre-flight check failed. Cannot write to remote:${BUCKET}."
     exit 1
 fi
-rclone deletefile "remote:${BUCKET}/.backup_ping.txt" || true
+rclone delete "remote:${BUCKET}/.backup_ping.txt" || true
 echo "[Backup] Pre-flight check passed."
 
 # 遍历 /backup/ 目录下的所有子目录并进行分别打包

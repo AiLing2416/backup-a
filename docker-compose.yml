@@ -11,13 +11,13 @@ services:
       - RETENTION_DAYS=30
       # 存储目标类型
       - TYPE=s3
-      - PROVIDER=Minio
-      - ENDPOINT=http://10.47.0.106:9000
+      - PROVIDER=Other
+      - ENDPOINT=https://s3.us-west-004.backblazeb2.com
       # 认证凭据 (保持变量最简化)
-      - ACCESS_KEY=admin
-      - SECRET_KEY=password123
+      - ACCESS_KEY=004b40fb89f206f0000000003
+      - SECRET_KEY=K004q3hLoWT2SeS4s7QrTPcXqF1G1tI
       # R2 或目标存储桶的桶名
-      - BUCKET=my-backup-bucket
+      - BUCKET=test-87998
       
       # Webhook 通知地址 (可选，留空则不发送)
       # - WEBHOOK_URL=https://your-webhook.example.com/notify

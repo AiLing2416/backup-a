@@ -51,7 +51,7 @@ if ! echo "ping" | rclone rcat "remote:${BUCKET}/.backup_ping.txt"; then
     echo "ERROR: Failed to write to remote:${BUCKET}. Please check your credentials, endpoint, and bucket permissions."
     exit 1
 fi
-rclone deletefile "remote:${BUCKET}/.backup_ping.txt" || true
+rclone delete "remote:${BUCKET}/.backup_ping.txt" || true
 echo "[Init] Pre-flight check passed. Remote bucket is accessible and writable."
 
 # 生成 ofelia 配置

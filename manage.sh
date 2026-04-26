@@ -32,7 +32,7 @@ case "$COMMAND" in
         echo "[Manage] Running connectivity and write test to remote:${BUCKET}..."
         if echo "ping" | rclone rcat "remote:${BUCKET}/.manage_ping.txt"; then
             echo "SUCCESS: Remote bucket is accessible and writable."
-            rclone deletefile "remote:${BUCKET}/.manage_ping.txt" || true
+            rclone delete "remote:${BUCKET}/.manage_ping.txt" || true
         else
             echo "FAILURE: Cannot connect or write to bucket. Check your credentials and endpoint."
             exit 1
