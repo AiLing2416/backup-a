@@ -42,6 +42,7 @@ access_key_id = ${ACCESS_KEY}
 secret_access_key = ${SECRET_KEY}
 endpoint = ${ENDPOINT}
 region = ${REGION}
+no_check_bucket = true
 EOF
 fi
 echo "[Init] Generated rclone.conf (Type: ${TYPE:-s3}, Region: ${REGION:-auto})"
