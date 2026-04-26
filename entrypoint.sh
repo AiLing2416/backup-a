@@ -16,9 +16,17 @@ fi
 echo "[Init] All /backup/ mounts are read-only."
 
 # 生成 rclone 配置
-# 针对变量尽量简化的需求，直接映射用户传入的 ACCESS_KEY 等变量
 mkdir -p /etc/rclone
-cat <<EOF > /etc/rclone/rclone.conf
+if [ "${TYPE}" = "b2" ]; then
+    cat <<EOF > /etc/rclone/rclone.conf
+[remote]
+type = b2
+account = ${ACCESS_KEY}
+key = ${SECRET_KEY}
+EOF
+else
+    # 默认为 S3 兼容模式
+    cat <<EOF > /etc/rclone/rclone.conf
 [remote]
 type = ${TYPE:-s3}
 provider = ${PROVIDER:-}
@@ -27,7 +35,8 @@ access_key_id = ${ACCESS_KEY}
 secret_access_key = ${SECRET_KEY}
 endpoint = ${ENDPOINT}
 EOF
-echo "[Init] Generated rclone.conf"
+fi
+echo "[Init] Generated rclone.conf (Type: ${TYPE:-s3})"
 
 echo "[Init] Pre-flight check: Verifying remote bucket connectivity and write access..."
 if ! echo "ping" | rclone rcat "remote:${BUCKET}/.backup_ping.txt"; then
