@@ -23,8 +23,15 @@ if [ "${TYPE}" = "b2" ]; then
 type = b2
 account = ${ACCESS_KEY}
 key = ${SECRET_KEY}
+hard_delete = true
 EOF
 else
+    # 自动尝试从 Endpoint 提取 Region (针对 B2 S3 特别有用)
+    REGION=""
+    if [[ "$ENDPOINT" =~ s3\.([a-z0-9-]+)\.backblazeb2\.com ]]; then
+        REGION="${BASH_REMATCH[1]}"
+    fi
+
     # 默认为 S3 兼容模式
     cat <<EOF > /etc/rclone/rclone.conf
 [remote]
@@ -34,9 +41,10 @@ env_auth = false
 access_key_id = ${ACCESS_KEY}
 secret_access_key = ${SECRET_KEY}
 endpoint = ${ENDPOINT}
+region = ${REGION}
 EOF
 fi
-echo "[Init] Generated rclone.conf (Type: ${TYPE:-s3})"
+echo "[Init] Generated rclone.conf (Type: ${TYPE:-s3}, Region: ${REGION:-auto})"
 
 echo "[Init] Pre-flight check: Verifying remote bucket connectivity and write access..."
 if ! echo "ping" | rclone rcat "remote:${BUCKET}/.backup_ping.txt"; then

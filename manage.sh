@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eo pipefail
+# set -e removed to prevent silent exits during manual management
 
 # 获取调用时的脚本名称
 INVOKED_NAME=$(basename "$0")
