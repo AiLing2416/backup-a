@@ -1,8 +1,17 @@
 #!/bin/bash
 set -eo pipefail
 
-COMMAND=$1
-shift || true
+# 获取调用时的脚本名称
+INVOKED_NAME=$(basename "$0")
+
+# 如果是通过 manage.sh 调用，则第一个参数是命令
+# 如果是通过软链接（如 list, backup）直接调用，则命令就是文件名本身
+if [[ "$INVOKED_NAME" == "manage.sh" ]]; then
+    COMMAND=$1
+    shift || true
+else
+    COMMAND="$INVOKED_NAME"
+fi
 
 # 确保环境变量存在
 if [ -z "$BUCKET" ]; then
@@ -33,13 +42,12 @@ case "$COMMAND" in
         DAYS=$1
         FORCE=$2
         if [ -z "$DAYS" ]; then
-            echo "Usage: manage.sh prune <days> [-y]"
-            echo "Example: manage.sh prune 7 (Deletes files older than 7 days)"
+            echo "Usage: prune <days> [-y]"
+            echo "Example: prune 7 (Deletes files older than 7 days)"
             exit 1
         fi
         
         echo "[Manage] Scanning for files older than $DAYS days in remote:${BUCKET}..."
-        # 预览即将删除的文件
         FILES_TO_DELETE=$(rclone lsf "remote:${BUCKET}" --min-age "${DAYS}d" --recursive)
         
         if [ -z "$FILES_TO_DELETE" ]; then
@@ -53,8 +61,7 @@ case "$COMMAND" in
         echo "--------------------------------"
         
         if [[ "$FORCE" != "-y" && "$FORCE" != "--yes" ]]; then
-            # 如果不是 -y 模式，尝试交互式确认
-            # 注意：docker exec 需要配合 -it 才能交互
+            # 交互式确认
             read -p "Are you sure you want to delete these files? (y/N): " confirm
             if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
                 echo "Aborted."
@@ -64,24 +71,15 @@ case "$COMMAND" in
         
         echo "[Manage] Deleting files..."
         rclone delete "remote:${BUCKET}" --min-age "${DAYS}d" -v
-        # 清理空目录
         rclone rmdirs "remote:${BUCKET}" --leave-root 2>/dev/null || true
         echo "[Manage] Prune completed successfully."
         ;;
     *)
-        echo "backup-a Management Tool"
-        echo "Usage: manage.sh {backup|list|check|prune}"
-        echo ""
-        echo "Commands:"
-        echo "  backup             Run the full backup process immediately"
-        echo "  list               List all files stored in the remote bucket"
-        echo "  check              Test connectivity and write permissions to S3"
-        echo "  prune <days> [-y]  Delete files older than specified days"
-        echo ""
-        echo "Example usage via docker exec:"
-        echo "  docker exec backup-a /manage.sh list"
-        echo "  docker exec -it backup-a /manage.sh prune 30"
-        echo "  docker exec backup-a /manage.sh prune 30 -y"
+        if [[ "$INVOKED_NAME" == "manage.sh" ]]; then
+            echo "Usage: manage.sh {backup|list|check|prune}"
+        else
+            echo "Unknown command: $INVOKED_NAME"
+        fi
         exit 1
         ;;
 esac

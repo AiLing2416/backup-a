@@ -17,15 +17,15 @@
 
 ### 手动管理工具 (Manual Management)
 
-容器内置了 `/manage.sh` 工具，方便通过 `docker exec` 进行日常维护：
+容器已将常用管理功能注册为全局命令，您可以直接通过 `docker exec` 调用，无需记忆脚本路径：
 
-| 功能 | 命令 | 说明 |
+| 功能 | 直接执行命令 | 说明 |
 | :--- | :--- | :--- |
-| **立即备份** | `docker exec backup-a /manage.sh backup` | 立即手动触发全量归档备份流程 |
-| **列表查询** | `docker exec backup-a /manage.sh list` | 列出远程存储桶中的所有备份文件 |
-| **连通自检** | `docker exec backup-a /manage.sh check` | 手动执行 S3 写入和连通性测试 |
-| **手动清理** | `docker exec backup-a /manage.sh prune 7` | 交互式确认后删除 7 天前的备份 |
-| **静默清理** | `docker exec backup-a /manage.sh prune 30 -y` | 强制删除 30 天前的备份 (无确认) |
+| **列表查询** | `docker exec backup-a list` | 列出远程存储桶中的所有备份文件 |
+| **连通自检** | `docker exec backup-a check` | 手动执行 S3 写入和连通性测试 |
+| **立即备份** | `docker exec backup-a backup` | 立即手动触发全量归档备份流程 |
+| **手动清理** | `docker exec -it backup-a prune 7` | 交互式确认后删除 7 天前的备份 |
+| **静默清理** | `docker exec backup-a prune 30 -y` | 强制删除 30 天前的备份 (无确认) |
 
 ### Webhook 负载格式 (JSON)
 

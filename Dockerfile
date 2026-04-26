@@ -24,8 +24,12 @@ COPY entrypoint.sh /entrypoint.sh
 COPY backup.sh /backup.sh
 COPY manage.sh /manage.sh
 
-# 赋予执行权限
-RUN chmod +x /entrypoint.sh /backup.sh /manage.sh
+# 赋予执行权限并创建快捷软链接
+RUN chmod +x /entrypoint.sh /backup.sh /manage.sh && \
+    ln -s /manage.sh /usr/local/bin/backup && \
+    ln -s /manage.sh /usr/local/bin/list && \
+    ln -s /manage.sh /usr/local/bin/check && \
+    ln -s /manage.sh /usr/local/bin/prune
 
 # 设定 rclone 配置路径
 ENV RCLONE_CONFIG=/etc/rclone/rclone.conf
