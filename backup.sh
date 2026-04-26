@@ -73,25 +73,6 @@ for dir in /backup/*; do
     fi
 done
 
-# 应用远程保留策略
-RETENTION=${RETENTION_DAYS:-30}
-if [ "$RETENTION" -gt 0 ]; then
-    echo "========================================"
-    echo "Applying Retention Policy: ${RETENTION} days"
-    for dir in /backup/*; do
-        if [ -d "$dir" ]; then
-            dirname=$(basename "$dir")
-            echo "  -> Checking retention for ${dirname}..."
-            # 自动删除超过指定天数的文件
-            rclone delete "remote:${BUCKET}/${dirname}/" --min-age "${RETENTION}d" -v
-            # 清理可能的空目录（忽略错误）
-            rclone rmdirs "remote:${BUCKET}/${dirname}/" --leave-root 2>/dev/null || true
-        fi
-    done
-else
-    echo "Retention policy disabled (RETENTION_DAYS=0)."
-fi
-
 echo "========================================"
 echo "Backup job completed successfully at $(date)"
 notify "SUCCESS" "Backup completed. Details: $DETAILS"

@@ -24,6 +24,10 @@ case "$COMMAND" in
         echo "[Manage] Starting manual backup task..."
         /backup.sh
         ;;
+    prune-auto)
+        echo "[Manage] Starting automated retention task (using RETENTION_DAYS)..."
+        /prune.sh
+        ;;
     list)
         echo "[Manage] Listing all backups in remote:${BUCKET}..."
         rclone lsf "remote:${BUCKET}" --recursive --format "pt"

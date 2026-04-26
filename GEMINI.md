@@ -10,9 +10,9 @@ This file outlines the core principles, design decisions, and testing methodolog
 4.  **Pre-flight Connectivity Check**: Before starting the scheduler (`entrypoint.sh`) and before each backup run (`backup.sh`), the container performs an `rclone rcat` ping test to ensure the target bucket is both reachable and writable. This "fail-fast" mechanism prevents unnecessary CPU usage if storage is unavailable.
 5.  **Granular Archiving**: The backup script (`backup.sh`) iterates through each immediate subdirectory within `/backup/` and compresses them into individual archives (e.g., `dirname_YYYYMMDD_HHMMSS.tar.gz`).
 6.  **Simplified Configuration**: Rclone configuration is generated dynamically from a flat list of environment variables (`TYPE`, `PROVIDER`, `ENDPOINT`, `ACCESS_KEY`, `SECRET_KEY`, `BUCKET`) to simplify deployment.
-7.  **Automated Retention**: A retention policy (`RETENTION_DAYS`) is built-in and enforced via `rclone delete --min-age`. Setting it to `0` disables automated deletion.
+7.  **Automated Retention**: A retention policy (`RETENTION_DAYS`) is enforced via a dedicated `prune.sh` script, scheduled independently by `ofelia`.
 8.  **Webhook Notifications**: Support for sending JSON payloads to a specified `WEBHOOK_URL` upon task completion (Success or Failure).
-9.  **Manual Management Utility**: A `manage.sh` script is symlinked to `/usr/local/bin/` as `list`, `check`, `backup`, and `prune` for easy execution via `docker exec`.
+9.  **Manual Management Utility**: A `manage.sh` script is symlinked to `/usr/local/bin/` as `list`, `check`, `backup`, `prune`, and `prune-auto` for easy execution via `docker exec`.
 10. **Base Image**: The official published image for this project is `docker.io/ailing2416/backup-a:1.0`.
 
 ## Testing Methodology

@@ -58,12 +58,19 @@ echo "[Init] Pre-flight check passed. Remote bucket is accessible and writable."
 # 生成 ofelia 配置
 # 默认使用 0 0 2 * * * (每日凌晨2点) 如果没有提供 CRON_SCHEDULE 变量的话
 CRON_SCHEDULE=${CRON_SCHEDULE:-"0 0 2 * * *"}
+# 预设清理任务在备份开始后 30 分钟执行 (假设是 0 30 2 * * *)
+PRUNE_SCHEDULE=${PRUNE_SCHEDULE:-"0 30 2 * * *"}
+
 cat <<EOF > /etc/ofelia.conf
 [job-local "backup-job"]
 schedule = ${CRON_SCHEDULE}
 command = /backup.sh
+
+[job-local "prune-job"]
+schedule = ${PRUNE_SCHEDULE}
+command = /prune.sh
 EOF
-echo "[Init] Generated ofelia.conf with schedule: $CRON_SCHEDULE"
+echo "[Init] Generated ofelia.conf with backup: $CRON_SCHEDULE and prune: $PRUNE_SCHEDULE"
 
 # 启动 ofelia 调度器
 echo "[Init] Starting Ofelia scheduler..."

@@ -24,6 +24,7 @@
 | **列表查询** | `docker exec backup-a list` | 列出远程存储桶中的所有备份文件 |
 | **连通自检** | `docker exec backup-a check` | 手动执行 S3 写入和连通性测试 |
 | **立即备份** | `docker exec backup-a backup` | 立即手动触发全量归档备份流程 |
+| **执行清理** | `docker exec backup-a prune-auto` | 立即按环境变量 `RETENTION_DAYS` 执行过期清理 |
 | **手动清理** | `docker exec -it backup-a prune 7` | 交互式确认后删除 7 天前的备份 |
 | **静默清理** | `docker exec backup-a prune 30 -y` | 强制删除 30 天前的备份 (无确认) |
 
