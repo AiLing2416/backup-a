@@ -20,15 +20,15 @@ jobs:
     permissions:
       contents: read
     env:
-      IMAGE_NAME: docker.io/${{ vars.DOCKERHUB_REPOSITORY }}
+      IMAGE_NAME: docker.io/${{ secrets.DOCKERHUB_REPOSITORY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate Docker Hub repository variable
-        if: ${{ vars.DOCKERHUB_REPOSITORY == '' }}
+      - name: Validate Docker Hub repository secret
+        if: ${{ secrets.DOCKERHUB_REPOSITORY == '' }}
         run: |
-          echo "Repository variable DOCKERHUB_REPOSITORY is required, e.g. ailing2416/backup-a"
+          echo "Repository secret DOCKERHUB_REPOSITORY is required, e.g. ailing2416/backup-a"
           exit 1
 
       - name: Set up Docker Buildx
