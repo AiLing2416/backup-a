@@ -11,10 +11,15 @@ notify() {
     local message="$2"
     if [ -n "$WEBHOOK_URL" ]; then
         echo "Sending webhook notification (Status: $status)..."
-        # 发送简单的 JSON 到 Webhook
+        local payload
+        payload=$(jq -cn \
+            --arg status "$status" \
+            --arg message "$message" \
+            --arg container "backup-a" \
+            '{status: $status, message: $message, container: $container}')
         curl -s -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
-            -d "{\"status\": \"$status\", \"message\": \"$message\", \"container\": \"backup-a\"}" || true
+            --data-binary "$payload" || true
     fi
 }
 

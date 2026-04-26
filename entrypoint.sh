@@ -45,6 +45,7 @@ region = ${REGION}
 no_check_bucket = true
 EOF
 fi
+chmod 600 /etc/rclone/rclone.conf
 echo "[Init] Generated rclone.conf (Type: ${TYPE:-s3}, Region: ${REGION:-auto})"
 
 echo "[Init] Pre-flight check: Verifying remote bucket connectivity and write access..."

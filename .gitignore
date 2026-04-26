@@ -1,3 +1,11 @@
 *.swp
 *~
 .DS_Store
+.codex
+.env
+.env.*
+!.env.example
+rclone.conf
+docker-compose.override.yml
+*.md
+!README.md

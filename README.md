@@ -1,42 +1,102 @@
-# backup-a 容器化备份方案
+# backup-a
 
-基于 Alpine 制作的自动化备份容器，使用 Ofelia 作为任务调度器，并通过 Rclone 同步到支持 S3 协议的存储桶（如 Cloudflare R2）。利用 `pigz` 进行多线程压缩，极大地提升压缩效率。
+`backup-a` 是一个面向个人和小型自托管场景的容器化备份方案。它基于 Alpine 构建，使用 Ofelia 负责定时调度，使用 `tar + pigz` 完成分目录压缩，并通过 Rclone 上传到兼容 S3 的对象存储。
 
-## 核心特性
-- **高度精简**: 基于 Alpine 基础镜像。
-- **自动检测并发**: 自动读取宿主机的 CPU 核心数，`pigz` 默认占用 80% 算力（上限为 4 核心），也支持使用 `PIGZ_THREADS` 变量强制指定。
-- **强制只读挂载**: 入口脚本会在运行前检查所有挂载到 `/backup/` 下的目录权限，如果发现不是 `:ro` (read-only) 只读挂载，容器将自动退出，保护原数据不受破坏。
-- **启动前置自检 (Pre-flight Check)**: 容器在启动时及每次执行备份前，均会向目标存储桶自动发送写入测试。如果配置错误导致连接失败或无写入权限，任务将立即中止，避免空耗 CPU 算力进行无意义的压缩。
-- **分目录归档**: 会将 `/backup/` 下的每一个子目录，单独压缩成 `dirname_YYYYMMDD_HHMMSS.tar.gz` 然后推送到目标存储桶对应的目录内。
-- **Webhook 状态推送**: 通过 `WEBHOOK_URL` 支持发送 JSON 格式的成功/失败提醒。
-- **内置远程留存清理**: 备份完成后会自动使用 Rclone 检查并删除超出 `RETENTION_DAYS` 的旧备份。
+## 功能特性
 
-## 使用指引
+- 基于容器运行，部署简单，适合放在现有 Docker / Compose 环境中长期运行。
+- 使用 Ofelia 进行定时调度，支持独立配置备份任务与清理任务的执行时间。
+- 自动遍历 `/backup/` 下的一级子目录，并分别生成独立归档文件，便于恢复和管理。
+- 使用 `pigz` 进行多线程压缩，默认按 CPU 核数自动计算线程数，上限为 4。
+- 备份前执行远端写入自检，提前发现存储桶不可达、凭据错误或无写权限等问题。
+- 启动时检查 `/backup/` 下的挂载是否为只读，避免误操作影响源数据。
+- 支持通过 `WEBHOOK_URL` 发送成功或失败通知。
+- 支持基于 `RETENTION_DAYS` 的远端过期清理。
+- 提供 `backup`、`list`、`check`、`prune`、`prune-auto` 等管理命令，便于手动触发和排查。
 
-详细变量和配置参考 `docker-compose.yml` 中的内容。
+## 示例配置
 
-### 手动管理工具 (Manual Management)
+默认使用本地构建方式运行：
 
-容器已将常用管理功能注册为全局命令，您可以直接通过 `docker exec` 调用，无需记忆脚本路径：
+```yaml
+services:
+  backup-a:
+    build: .
+    container_name: backup-a
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Shanghai
+      - CRON_SCHEDULE=0 0 2 * * *
+      - PRUNE_SCHEDULE=0 30 2 * * *
+      - RETENTION_DAYS=30
+      - TYPE=s3
+      - PROVIDER=Other
+      - ENDPOINT=https://s3.us-west-004.backblazeb2.com
+      - ACCESS_KEY=${ACCESS_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      - BUCKET=${BUCKET}
+      - RCLONE_BUFFER_SIZE=16M
+      # - PIGZ_THREADS=2
+      # - WEBHOOK_URL=https://your-webhook.example.com/notify
+    volumes:
+      - /opt/data/nextcloud:/backup/nextcloud:ro
+      - /opt/data/mysql_dumps:/backup/mysql:ro
+```
 
-| 功能 | 直接执行命令 | 说明 |
+`.env.example` 可作为变量模板使用：
+
+```dotenv
+ACCESS_KEY=your-access-key
+SECRET_KEY=your-secret-key
+BUCKET=your-bucket-name
+```
+
+常用手动命令：
+
+```bash
+docker exec backup-a check
+docker exec backup-a backup
+docker exec backup-a list
+docker exec backup-a prune-auto
+docker exec -it backup-a prune 7
+docker exec backup-a prune 30 -y
+```
+
+## 变量说明
+
+| 变量名 | 默认值 | 说明 |
 | :--- | :--- | :--- |
-| **列表查询** | `docker exec backup-a list` | 列出远程存储桶中的所有备份文件 |
-| **连通自检** | `docker exec backup-a check` | 手动执行 S3 写入和连通性测试 |
-| **立即备份** | `docker exec backup-a backup` | 立即手动触发全量归档备份流程 |
-| **执行清理** | `docker exec backup-a prune-auto` | 立即按环境变量 `RETENTION_DAYS` 执行过期清理 |
-| **手动清理** | `docker exec -it backup-a prune 7` | 交互式确认后删除 7 天前的备份 |
-| **静默清理** | `docker exec backup-a prune 30 -y` | 强制删除 30 天前的备份 (无确认) |
+| `TZ` | `Asia/Shanghai` | 容器时区。 |
+| `CRON_SCHEDULE` | `0 0 2 * * *` | 备份任务的 Ofelia 六段式 cron 表达式。 |
+| `PRUNE_SCHEDULE` | `0 30 2 * * *` | 清理任务的 Ofelia 六段式 cron 表达式。 |
+| `RETENTION_DAYS` | `30` | 远端保留天数，`0` 表示关闭自动清理。 |
+| `TYPE` | `s3` | Rclone 远端类型，常见为 `s3` 或 `b2`。 |
+| `PROVIDER` | `Other` | S3 提供商类型，兼容存储通常使用 `Other`。 |
+| `ENDPOINT` | 无 | 对象存储接入地址，例如 R2、B2 S3、MinIO。 |
+| `ACCESS_KEY` | 无 | 对象存储访问密钥 ID。 |
+| `SECRET_KEY` | 无 | 对象存储访问密钥 Secret。 |
+| `BUCKET` | 无 | 目标存储桶名称。 |
+| `RCLONE_BUFFER_SIZE` | `16M` | Rclone 上传缓冲区大小，低内存环境可适当调小。 |
+| `PIGZ_THREADS` | 自动计算 | 压缩线程数；未设置时按 CPU 核心数的 80% 自动计算，上限为 4。 |
+| `WEBHOOK_URL` | 空 | 任务完成后发送通知的 Webhook 地址。 |
 
-### Webhook 负载格式 (JSON)
+补充说明：
 
-若配置了 `WEBHOOK_URL`，备份任务成功或失败时都会发送 POST 请求：
+- `/backup/` 下每个一级子目录会单独生成一个归档文件，命名格式为 `目录名_YYYYMMDD_HHMMSS.tar.gz`。
+- `volumes` 挂载到 `/backup/` 的目录必须带 `:ro`，否则容器会在启动时直接退出。
+- 当 `TYPE=b2` 时，脚本会按 Backblaze B2 原生方式生成 Rclone 配置。
 
-\`\`\`json
-{
-  "status": "SUCCESS", 
-  "message": "Backup completed. Details:  nextcloud (success); mysql (success);", 
-  "container": "backup-a"
-}
-\`\`\`
-*(如果是失败，status 则为 "FAILED")*
+## 标签说明
+
+当前仓库默认使用 `build: .` 本地构建，因此即使不依赖远程镜像标签，也可以直接部署。
+
+如果你发布预构建镜像，推荐按下面的方式理解和使用标签：
+
+- `latest`：最新可用版本，适合个人项目直接跟随更新。
+- `1`：主版本标签，表示同一主版本线上的最新构建。
+- `1.0`、`1.1`：固定次版本标签，适合希望在一个较稳定范围内更新的场景。
+- `1.0.3`：固定完整版本标签，适合需要精确复现环境的场景。
+
+如果你的目标是省心维护，直接使用 `latest` 或保持本地 `build: .` 都是合理选择；如果你的目标是更强的可重复性，再切换到明确版本标签即可。

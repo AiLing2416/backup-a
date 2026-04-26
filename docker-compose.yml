@@ -3,31 +3,49 @@ services:
     build: .
     container_name: backup-a
     restart: unless-stopped
+
+    # 从本地 .env 读取认证信息和桶名
+    env_file:
+      - .env
+
     environment:
+      # 时区
       - TZ=Asia/Shanghai
-      # 调度策略, 默认每天凌晨两点运行
+
+      # 备份任务计划: Ofelia 使用六段式 cron
       - CRON_SCHEDULE=0 0 2 * * *
-      # 保留策略，默认保留 30 天，0 为停用删除
+
+      # 清理任务计划: 默认在备份开始后 30 分钟执行
+      - PRUNE_SCHEDULE=0 30 2 * * *
+
+      # 远端保留天数, 0 表示关闭自动清理
       - RETENTION_DAYS=30
-      # 存储目标类型
+
+      # 存储类型: 常见为 s3 或 b2
       - TYPE=s3
+
+      # S3 兼容服务通常使用 Other
       - PROVIDER=Other
+
+      # 对象存储接入地址
       - ENDPOINT=https://s3.us-west-004.backblazeb2.com
-      # 认证凭据 (保持变量最简化)
-      - ACCESS_KEY=004b40fb89f206f0000000003
-      - SECRET_KEY=K004q3hLoWT2SeS4s7QrTPcXqF1G1tI
-      # R2 或目标存储桶的桶名
-      - BUCKET=test-87998
-      
-      # Webhook 通知地址 (可选，留空则不发送)
+
+      # 以下值从 .env 注入
+      - ACCESS_KEY=${ACCESS_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      - BUCKET=${BUCKET}
+
+      # Webhook 通知地址, 可选
       # - WEBHOOK_URL=https://your-webhook.example.com/notify
 
-      # [内存优化] RCLONE 传输缓冲区大小，默认 16M。如果内存极小（如 128M VPS）建议设为 0
+      # Rclone 上传缓冲区大小
       - RCLONE_BUFFER_SIZE=16M
 
-      # PIGZ 压缩线程数 (可选，如果取消注释则指定具体线程数，默认按本机 80% 自适应，上限为 4)
-      # - PIGZ_THREADS=2 
+      # 可选: 手动指定压缩线程数
+      # - PIGZ_THREADS=2
+
     volumes:
-      # [强制要求] 此处需要备份的目录挂载到 /backup/ 下，且必须添加 ':ro' 权限
+      # 将需要备份的宿主机目录挂载到 /backup/ 下
+      # 必须带 :ro, 否则容器启动时会拒绝运行
       - /opt/data/nextcloud:/backup/nextcloud:ro
       - /opt/data/mysql_dumps:/backup/mysql:ro

@@ -10,9 +10,16 @@ notify() {
     local status="$1"
     local message="$2"
     if [ -n "$WEBHOOK_URL" ]; then
+        local payload
+        payload=$(jq -cn \
+            --arg status "$status" \
+            --arg message "$message" \
+            --arg container "backup-a" \
+            --arg task "prune" \
+            '{status: $status, message: $message, container: $container, task: $task}')
         curl -s -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
-            -d "{\"status\": \"$status\", \"message\": \"$message\", \"container\": \"backup-a\", \"task\": \"prune\"}" || true
+            --data-binary "$payload" || true
     fi
 }
 
