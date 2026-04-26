@@ -47,6 +47,9 @@ fi
 rclone delete "remote:${BUCKET}/.backup_ping.txt" || true
 echo "[Backup] Pre-flight check passed."
 
+# 允许通过环境变量 RCLONE_BUFFER_SIZE 控制 rclone 的内存缓冲区 (默认 16M)
+BUF_SIZE=${RCLONE_BUFFER_SIZE:-"16M"}
+
 # 遍历 /backup/ 目录下的所有子目录并进行分别打包
 for dir in /backup/*; do
     # 确保是目录
@@ -61,9 +64,9 @@ for dir in /backup/*; do
         # 使用 tar 和 pigz 进行多线程压缩
         tar -cf - -C /backup "$dirname" | pigz -p "$PIGZ_THREADS" > "$tmp_archive"
         
-        echo "  -> Uploading to remote:${BUCKET}/${dirname}/..."
-        # 使用 rclone 复制到远程桶，存放在各自的子目录下
-        rclone copy "$tmp_archive" "remote:${BUCKET}/${dirname}/" -v
+        echo "  -> Uploading to remote:${BUCKET}/${dirname}/ (Buffer: $BUF_SIZE)..."
+        # 使用 rclone 复制到远程桶，并应用缓冲区限制
+        rclone copy "$tmp_archive" "remote:${BUCKET}/${dirname}/" --buffer-size "$BUF_SIZE" -v
         
         echo "  -> Cleaning up local temporary archive..."
         rm -f "$tmp_archive"

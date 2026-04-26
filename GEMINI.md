@@ -6,14 +6,15 @@ This file outlines the core principles, design decisions, and testing methodolog
 
 1.  **Architecture**: `backup-a` is an Alpine-based container that utilizes `ofelia` for task scheduling and `rclone` for syncing to S3-compatible storage (e.g., Cloudflare R2, MinIO).
 2.  **Multi-threaded Compression**: Backups are compressed using `pigz` for maximum efficiency. The number of threads (`PIGZ_THREADS`) is dynamically calculated at runtime (defaulting to 80% of available CPU cores, capped at 4) unless explicitly overridden via an environment variable.
-3.  **Strict Read-Only Enforcement**: To ensure absolute data safety, the entrypoint script rigorously checks all mounts under the `/backup/` directory. If any mount is found to be writable (`rw`), the container will immediately exit with a critical error. **Never bypass this check.**
-4.  **Pre-flight Connectivity Check**: Before starting the scheduler (`entrypoint.sh`) and before each backup run (`backup.sh`), the container performs an `rclone rcat` ping test to ensure the target bucket is both reachable and writable. This "fail-fast" mechanism prevents unnecessary CPU usage if storage is unavailable.
-5.  **Granular Archiving**: The backup script (`backup.sh`) iterates through each immediate subdirectory within `/backup/` and compresses them into individual archives (e.g., `dirname_YYYYMMDD_HHMMSS.tar.gz`).
-6.  **Simplified Configuration**: Rclone configuration is generated dynamically from a flat list of environment variables (`TYPE`, `PROVIDER`, `ENDPOINT`, `ACCESS_KEY`, `SECRET_KEY`, `BUCKET`) to simplify deployment.
-7.  **Automated Retention**: A retention policy (`RETENTION_DAYS`) is enforced via a dedicated `prune.sh` script, scheduled independently by `ofelia`.
-8.  **Webhook Notifications**: Support for sending JSON payloads to a specified `WEBHOOK_URL` upon task completion (Success or Failure).
-9.  **Manual Management Utility**: A `manage.sh` script is symlinked to `/usr/local/bin/` as `list`, `check`, `backup`, `prune`, and `prune-auto` for easy execution via `docker exec`.
-10. **Base Image**: The official published image for this project is `docker.io/ailing2416/backup-a:1.0`.
+3.  **Memory Management**: Rclone's upload buffer can be controlled via `RCLONE_BUFFER_SIZE` (default: 16M). Setting this to `0` or a small value helps prevent OOM on memory-constrained systems.
+4.  **Strict Read-Only Enforcement**: To ensure absolute data safety, the entrypoint script rigorously checks all mounts under the `/backup/` directory. If any mount is found to be writable (`rw`), the container will immediately exit with a critical error. **Never bypass this check.**
+5.  **Pre-flight Connectivity Check**: Before starting the scheduler (`entrypoint.sh`) and before each backup run (`backup.sh`), the container performs an `rclone rcat` ping test to ensure the target bucket is both reachable and writable. This "fail-fast" mechanism prevents unnecessary CPU usage if storage is unavailable.
+6.  **Granular Archiving**: The backup script (`backup.sh`) iterates through each immediate subdirectory within `/backup/` and compresses them into individual archives (e.g., `dirname_YYYYMMDD_HHMMSS.tar.gz`).
+7.  **Simplified Configuration**: Rclone configuration is generated dynamically from a flat list of environment variables (`TYPE`, `PROVIDER`, `ENDPOINT`, `ACCESS_KEY`, `SECRET_KEY`, `BUCKET`) to simplify deployment.
+8.  **Automated Retention**: A retention policy (`RETENTION_DAYS`) is enforced via a dedicated `prune.sh` script, scheduled independently by `ofelia`.
+9.  **Webhook Notifications**: Support for sending JSON payloads to a specified `WEBHOOK_URL` upon task completion (Success or Failure).
+10. **Manual Management Utility**: A `manage.sh` script is symlinked to `/usr/local/bin/` as `list`, `check`, `backup`, `prune`, and `prune-auto` for easy execution via `docker exec`.
+11. **Base Image**: The official published image for this project is `docker.io/ailing2416/backup-a:1.0`.
 
 ## Testing Methodology
 

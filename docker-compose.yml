@@ -22,6 +22,9 @@ services:
       # Webhook 通知地址 (可选，留空则不发送)
       # - WEBHOOK_URL=https://your-webhook.example.com/notify
 
+      # [内存优化] RCLONE 传输缓冲区大小，默认 16M。如果内存极小（如 128M VPS）建议设为 0
+      - RCLONE_BUFFER_SIZE=16M
+
       # PIGZ 压缩线程数 (可选，如果取消注释则指定具体线程数，默认按本机 80% 自适应，上限为 4)
       # - PIGZ_THREADS=2 
     volumes:
