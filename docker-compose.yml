@@ -1,0 +1,30 @@
+services:
+  backup-a:
+    build: .
+    container_name: backup-a
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+      # 调度策略, 默认每天凌晨两点运行
+      - CRON_SCHEDULE=0 0 2 * * *
+      # 保留策略，默认保留 30 天，0 为停用删除
+      - RETENTION_DAYS=30
+      # 存储目标类型
+      - TYPE=s3
+      - PROVIDER=Minio
+      - ENDPOINT=http://10.47.0.106:9000
+      # 认证凭据 (保持变量最简化)
+      - ACCESS_KEY=admin
+      - SECRET_KEY=password123
+      # R2 或目标存储桶的桶名
+      - BUCKET=my-backup-bucket
+      
+      # Webhook 通知地址 (可选，留空则不发送)
+      # - WEBHOOK_URL=https://your-webhook.example.com/notify
+
+      # PIGZ 压缩线程数 (可选，如果取消注释则指定具体线程数，默认按本机 80% 自适应，上限为 4)
+      # - PIGZ_THREADS=2 
+    volumes:
+      # [强制要求] 此处需要备份的目录挂载到 /backup/ 下，且必须添加 ':ro' 权限
+      - /opt/data/nextcloud:/backup/nextcloud:ro
+      - /opt/data/mysql_dumps:/backup/mysql:ro
