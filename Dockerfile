@@ -22,9 +22,10 @@ RUN mkdir -p /backup /etc/rclone
 # 复制脚本
 COPY entrypoint.sh /entrypoint.sh
 COPY backup.sh /backup.sh
+COPY manage.sh /manage.sh
 
 # 赋予执行权限
-RUN chmod +x /entrypoint.sh /backup.sh
+RUN chmod +x /entrypoint.sh /backup.sh /manage.sh
 
 # 设定 rclone 配置路径
 ENV RCLONE_CONFIG=/etc/rclone/rclone.conf

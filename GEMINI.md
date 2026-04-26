@@ -12,7 +12,8 @@ This file outlines the core principles, design decisions, and testing methodolog
 6.  **Simplified Configuration**: Rclone configuration is generated dynamically from a flat list of environment variables (`TYPE`, `PROVIDER`, `ENDPOINT`, `ACCESS_KEY`, `SECRET_KEY`, `BUCKET`) to simplify deployment.
 7.  **Automated Retention**: A retention policy (`RETENTION_DAYS`) is built-in and enforced via `rclone delete --min-age`. Setting it to `0` disables automated deletion.
 8.  **Webhook Notifications**: Support for sending JSON payloads to a specified `WEBHOOK_URL` upon task completion (Success or Failure).
-9.  **Base Image**: The official published image for this project is `docker.io/ailing2416/backup-a:1.0`.
+9.  **Manual Management Utility**: A `manage.sh` script is provided for interactive or one-off tasks (list, check, backup, prune) via `docker exec`.
+10. **Base Image**: The official published image for this project is `docker.io/ailing2416/backup-a:1.0`.
 
 ## Testing Methodology
 
